@@ -1,3 +1,33 @@
 .captcha-container {
     position: relative;
+
+    .loading-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-size: 14px;
+        color: #45494c;
+        z-index: 2;
+        background: #EDF0F2;
+
+        .loading-icon {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 10px;
+            background: url(https://cstaticdun.126.net//2.13.6/images/icon_light.4353d81.png) 0 -332px;
+            background-size: 32px 544px;
+            animation: loading-icon-rotate 0.8s linear infinite;
+        }
+
+        @keyframes loading-icon-rotate {
+            from { transform: rotate(0) }
+            to { transform: rotate(360deg)}
+        }
+    }
 }
