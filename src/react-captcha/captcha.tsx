@@ -31,6 +31,8 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
 }) => {
   const $canvas = useRef<HTMLCanvasElement>(null);
 
+  const $sliderCanvas = useRef<HTMLCanvasElement>(null);
+
   // 加载态
   const [loading, setLoading] = useState(true);
 
@@ -41,17 +43,30 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
 
   const drawImage = useCallback(() => {
     if (!imgInstance) return;
-    if (!$canvas.current) return;
+    if (!$canvas.current || !$sliderCanvas.current) return;
 
     // 随机位置创建拼图形状
     const x = getRandomNumberByRange(L + 10, width - (L + 10));
     const y = getRandomNumberByRange(10 + r * 2, height - (L + 10));
+    // const x = 221;
+    // const y = 64;
+
+    const canvasCtx = $canvas.current.getContext('2d')!;
+    const sliderCanvasCtx = $sliderCanvas.current.getContext('2d')!;
 
     // 绘制底图
-    const canvasCtx = $canvas.current.getContext('2d')!;
-
     canvasCtx!.drawImage(imgInstance, 0, 0, width, height);
+
     drawPath(canvasCtx, x, y, l, r, 'fill');
+    drawPath(sliderCanvasCtx, x, y, l, r, 'clip');
+
+    sliderCanvasCtx!.drawImage(imgInstance, 0, 0, width, height);
+
+    // 提取滑块并放到最左边
+    const offsetY = y - r * 2 - 1;
+    const ImageData = sliderCanvasCtx.getImageData(x - 3, offsetY, L, L);
+    $sliderCanvas.current.width = L;
+    sliderCanvasCtx.putImageData(ImageData, 0, offsetY);
   }, [imgInstance]);
 
   const getRandomImage = useCallback(() => {
@@ -63,6 +78,10 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
     });
   }, [width, height]);
 
+  const handleSliderCanvasMove = (e: MouseEvent) => {
+    console.log(e);
+  };
+
   useEffect(() => {
     getRandomImage();
   }, []);
@@ -70,8 +89,6 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
   useEffect(() => {
     drawImage();
   }, [drawImage]);
-
-  console.log('imgInstance', imgInstance);
 
   return (
     <div
@@ -90,6 +107,12 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
       {!loading && (
         <>
           <canvas width={width} height={height} ref={$canvas}></canvas>
+          <canvas
+            width={width}
+            height={height}
+            className="slider-block"
+            ref={$sliderCanvas}
+          ></canvas>
         </>
       )}
     </div>
