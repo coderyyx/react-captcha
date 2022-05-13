@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { randomImage, getRandomNumberByRange } from './random-image';
+import useMemoizedFn from './hooks/use-memoized-fn';
 import drawPath from './utils/draw-path';
 
 import './index.less';
@@ -21,6 +22,12 @@ export type ReactCaptchaProps = {
    * 滑块半径
    */
   r: number;
+  /**
+   * 到目标位置的误差值
+   */
+  errorValue?: number;
+  onSuccess?: () => void;
+  onFail?: () => void;
 };
 
 const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
@@ -28,10 +35,19 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
   height = 155,
   l = 42,
   r = 9,
+  errorValue = 5,
+  onSuccess,
+  onFail,
 }) => {
   const $canvas = useRef<HTMLCanvasElement>(null);
 
   const $sliderCanvas = useRef<HTMLCanvasElement>(null);
+
+  const startX = useRef(0);
+
+  const [isMoving, setIsMoving] = useState(false);
+
+  const [transformX, setTransformX] = useState(0);
 
   // 加载态
   const [loading, setLoading] = useState(true);
@@ -46,10 +62,10 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
     if (!$canvas.current || !$sliderCanvas.current) return;
 
     // 随机位置创建拼图形状
-    const x = getRandomNumberByRange(L + 10, width - (L + 10));
-    const y = getRandomNumberByRange(10 + r * 2, height - (L + 10));
-    // const x = 221;
-    // const y = 64;
+    // const x = getRandomNumberByRange(L + 10, width - (L + 10));
+    // const y = getRandomNumberByRange(10 + r * 2, height - (L + 10));
+    const x = 221;
+    const y = 64;
 
     const canvasCtx = $canvas.current.getContext('2d')!;
     const sliderCanvasCtx = $sliderCanvas.current.getContext('2d')!;
@@ -78,9 +94,24 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
     });
   }, [width, height]);
 
-  const handleSliderCanvasMove = (e: MouseEvent) => {
+  const handleSliderPointerDown = useMemoizedFn((e) => {
     console.log(e);
-  };
+    setIsMoving(true);
+    startX.current = e.clientX;
+  });
+
+  const handleSliderPointerMove = useMemoizedFn((e) => {
+    if (!isMoving) return;
+
+    const delteX = e.clientX - startX.current;
+    if (delteX < 0) return;
+
+    setTransformX(delteX);
+  });
+
+  const handleSliderPointerCancel = useMemoizedFn((e) => {
+    setIsMoving(false);
+  });
 
   useEffect(() => {
     getRandomImage();
@@ -110,8 +141,13 @@ const ReactCaptcha: React.FC<ReactCaptchaProps> = ({
           <canvas
             width={width}
             height={height}
+            style={{ left: `${transformX}px` }}
             className="slider-block"
             ref={$sliderCanvas}
+            onPointerDown={handleSliderPointerDown}
+            onPointerMove={handleSliderPointerMove}
+            onPointerCancel={handleSliderPointerCancel}
+            onPointerUp={handleSliderPointerCancel}
           ></canvas>
         </>
       )}
